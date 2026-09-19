@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#f9fafb">
+    <title>我的30天学习计划</title>
+    
+    <!-- PWA Supporting Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="30天计划">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f6f8fd',
+                            100: '#eef1fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            900: '#1e3a8a',
+                        },
+                        done: {
+                            bg: '#f0fdf4',
+                            border: '#bbf7d0',
+                            text: '#166534'
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'floating': '0 10px 40px -10px rgba(0, 0, 0, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-enter { opacity: 1 !important; pointer-events: auto !important; }
+        .modal-enter .modal-content { transform: scale(1) translateY(0) !important; opacity: 1 !important; }
+        .time-tabular { font-variant-numeric: tabular-nums; }
+        
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: all 0.3s ease;
+        }
+        .modal-content {
+            background: white; border-radius: 24px; box-shadow: 0 20px 60px -10px rgba(0,0,0,0.2);
+            transform: scale(0.95) translateY(10px); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            width: calc(100% - 32px); max-height: 90vh; display: flex; flex-direction: column;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased min-h-screen">
+
+<div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-6 pb-20">
+
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-1">我的 30 天学习计划</h1>
+            <p class="text-gray-500 text-xs sm:text-sm font-medium">学习 · 翻译 · 语言 · 科研 · 职业能力</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button id="pwaInstallBtn" class="hidden items-center gap-1.5 px-3.5 py-2 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-500 transition-colors shadow-sm">
+                📲 安装到桌面
+            </button>
+            <button onclick="requestNotification()" class="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-sm">
+                🔔 开启提醒
+            </button>
+            <button onclick="goToday()" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+                今天
+            </button>
+            <button onclick="openResetModal()" class="px-4 py-2 bg-white border border-gray-200 text-red-600 text-sm font-medium rounded-xl hover:bg-red-50 transition-colors shadow-sm">
+                重置
+            </button>
+        </div>
+    </header>
+
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-soft">
+            <div class="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-1">自主任务完成率</div>
+            <div class="text-2xl sm:text-3xl font-bold text-gray-900" id="overallRate">0%</div>
+            <div class="h-1.5 bg-gray-100 rounded-full mt-2.5 overflow-hidden">
+                <div class="h-full bg-brand-500 rounded-full transition-all duration-500 ease-out" id="overallBar" style="width: 0%"></div>
+            </div>
+        </div>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-soft">
+            <div class="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-1">连续打卡</div>
+            <div class="text-2xl sm:text-3xl font-bold text-gray-900"><span id="streak">0</span> <span class="text-base text-gray-500 font-medium">天</span></div>
+        </div>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-soft">
+            <div class="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-1">已完成任务</div>
+            <div class="text-2xl sm:text-3xl font-bold text-gray-900" id="doneCount">0</div>
+        </div>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-soft">
+            <div class="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-1">今日完成率</div>
+            <div class="text-2xl sm:text-3xl font-bold text-gray-900" id="todayRate">0%</div>
+        </div>
+    </section>
+
+    <div class="flex justify-between items-center mb-6 bg-white p-2 rounded-2xl border border-gray-100 shadow-soft w-full md:w-max mx-auto">
+        <button id="prevBtn" onclick="changeDay(-1)" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-30 disabled:hover:bg-transparent">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <div class="px-6 text-center">
+            <strong id="dayTitle" class="block text-base sm:text-lg font-bold text-gray-900">第1天</strong>
+            <span id="dateTitle" class="block text-xs font-medium text-gray-500 mt-0.5"></span>
+        </div>
+        <button id="nextBtn" onclick="changeDay(1)" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-30 disabled:hover:bg-transparent">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        
+        <!-- Left Column: Tasks & Details -->
+        <main class="space-y-6">
+            
+            <!-- Today's Tasks Card -->
+            <section class="bg-white rounded-3xl border border-gray-100 shadow-soft overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-gray-900">今日任务</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">点击 ✓ 完成打卡 · 点击 🔔 设置提醒</p>
+                    </div>
+                    <button onclick="openEditScheduleModal()" class="px-3 py-1.5 bg-brand-50 text-brand-600 text-xs sm:text-sm font-semibold rounded-lg hover:bg-brand-100 transition-colors">
+                        编辑日程
+                    </button>
+                </div>
+                
+                <div id="taskArea" class="p-3 sm:p-6 space-y-3 bg-[#fdfdfd]">
+                    <!-- Tasks injected by JS -->
+                </div>
+                
+                <div class="p-4 sm:p-6 pt-0 bg-[#fdfdfd]">
+                    <div class="text-xs sm:text-sm font-bold text-gray-800 mb-2">今日备注</div>
+                    <textarea id="dailyNote" placeholder="记录今天学了什么、完成情况、遇到的问题……" oninput="saveNote()" class="w-full min-h-[90px] p-3 sm:p-4 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all resize-y"></textarea>
+                </div>
+            </section>
+
+            <!-- 30 Days Stats -->
+            <section class="bg-white rounded-3xl border border-gray-100 shadow-soft overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900">30天任务统计</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">每个具体学习时段独立统计</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[450px] text-xs sm:text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-500 font-semibold border-b border-gray-100">
+                            <tr>
+                                <th class="px-4 sm:px-6 py-3">任务</th>
+                                <th class="px-4 sm:px-6 py-3 text-center">计划次数</th>
+                                <th class="px-4 sm:px-6 py-3 text-center">已完成</th>
+                                <th class="px-4 sm:px-6 py-3 text-center">完成率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTable" class="divide-y divide-gray-100">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <aside class="space-y-6">
+            <section class="bg-white rounded-3xl border border-gray-100 shadow-soft overflow-hidden">
+                
+                <!-- Today Progress -->
+                <div class="p-5 border-b border-gray-100">
+                    <div class="font-bold text-gray-900 mb-3 text-sm sm:text-base">今日进度</div>
+                    <div class="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+                        <div id="todayBar" class="h-full bg-brand-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 text-right">
+                        <span id="todayDone" class="font-semibold text-gray-800">0</span> / <span id="todayTotal">0</span> 项完成
+                    </div>
+                </div>
+
+                <!-- Reminder Settings -->
+                <div class="p-5 border-b border-gray-100">
+                    <div class="font-bold text-gray-900 mb-3 text-sm sm:text-base">🔔 提醒设置</div>
+                    <div id="permissionStatus" class="px-3 py-2 bg-gray-100 text-gray-600 text-xs rounded-lg mb-3 font-medium">尚未开启通知权限</div>
+                    <button onclick="requestNotification()" class="w-full py-2 bg-white border border-gray-200 text-gray-700 text-xs sm:text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors mb-3 shadow-sm">
+                        开启通知提醒
+                    </button>
+                    
+                    <div class="flex justify-between items-center text-xs sm:text-sm mb-2">
+                        <span class="text-gray-600">默认提前</span>
+                        <select id="defaultReminder" onchange="changeDefaultReminder()" class="p-1.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-brand-300">
+                            <option value="0">不提醒</option>
+                            <option value="0-start">开始时</option>
+                            <option value="5">5分钟</option>
+                            <option value="10" selected>10分钟</option>
+                            <option value="15">15分钟</option>
+                            <option value="30">30分钟</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Task Status Sidebar -->
+                <div class="p-5 border-b border-gray-100">
+                    <div class="font-bold text-gray-900 mb-3 text-sm sm:text-base">今日任务状态</div>
+                    <div id="sideSummary" class="space-y-2">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Principles -->
+                <div class="p-5 bg-gray-50/50">
+                    <div class="font-bold text-gray-900 mb-3 text-sm sm:text-base">执行原则</div>
+                    <div class="text-xs text-gray-600 space-y-1.5 leading-relaxed">
+                        <p>① 西班牙语保持高频接触。</p>
+                        <p>② 泰语翻译是核心专业能力。</p>
+                        <p>③ 英语保持稳定即可。</p>
+                        <p>④ 面试 / 工作技能每次1小时。</p>
+                        <p>⑤ 学术阅读和日常阅读分开。</p>
+                        <p>⑥ 周六完整休息。</p>
+                        <p>⑦ 不要求每天100%完成。</p>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <section class="mt-8 bg-white rounded-3xl border border-gray-100 shadow-soft p-5 sm:p-8">
+        <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-5">30天结束后的复盘</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">1. 这个月完成得最稳定的任务</label>
+                <textarea id="review1" oninput="saveReview()" class="w-full min-h-[75px] p-3 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-brand-300 transition-all"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">2. 最容易拖延的任务</label>
+                <textarea id="review2" oninput="saveReview()" class="w-full min-h-[75px] p-3 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-brand-300 transition-all"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">3. 哪些时间安排需要调整</label>
+                <textarea id="review3" oninput="saveReview()" class="w-full min-h-[75px] p-3 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-brand-300 transition-all"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">4. 西班牙语有什么进步</label>
+                <textarea id="review4" oninput="saveReview()" class="w-full min-h-[75px] p-3 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-brand-300 transition-all"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">5. 泰语翻译能力有什么进步</label>
+                <textarea id="review5" oninput="saveReview()" class="w-full min-h-[75px] p-3 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-brand-300 transition-all"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">6. 下一个30天最重要的三个目标</label>
+                <textarea id="review6" oninput="saveReview()" class="w-full min-h-[75px] p-3 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-brand-300 transition-all"></textarea>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Modals -->
+<div id="reminderModal" class="modal-backdrop">
+    <div class="modal-content max-w-sm overflow-hidden p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-1">设置提醒</h3>
+        <p id="reminderModalTaskName" class="text-xs text-gray-500 mb-4">为任务设置提醒时间</p>
+        <div class="space-y-2 mb-4">
+            <button onclick="saveReminderSelection(0)" class="w-full p-2.5 text-left border border-gray-200 rounded-xl text-xs sm:text-sm font-medium text-gray-700 flex justify-between items-center hover:bg-gray-50">开始时提醒</button>
+            <button onclick="saveReminderSelection(5)" class="w-full p-2.5 text-left border border-gray-200 rounded-xl text-xs sm:text-sm font-medium text-gray-700 flex justify-between items-center hover:bg-gray-50">提前 5 分钟</button>
+            <button onclick="saveReminderSelection(10)" class="w-full p-2.5 text-left border border-gray-200 rounded-xl text-xs sm:text-sm font-medium text-gray-700 flex justify-between items-center hover:bg-gray-50">提前 10 分钟</button>
+            <button onclick="saveReminderSelection(-1)" class="w-full p-2.5 text-left border border-red-100 bg-red-50 text-red-600 rounded-xl text-xs sm:text-sm font-medium flex justify-between items-center hover:bg-red-100">关闭提醒</button>
+        </div>
+        <div class="pt-3 border-t border-gray-100 flex gap-2">
+            <input type="number" id="customReminderMinutes" min="0" max="1440" value="30" class="flex-1 p-2 border border-gray-200 rounded-xl text-xs outline-none" placeholder="自定义分钟">
+            <button onclick="saveCustomReminderInput()" class="px-3 py-2 bg-gray-900 text-white text-xs font-medium rounded-xl">确定</button>
+        </div>
+        <button onclick="closeModal('reminderModal')" class="mt-3 w-full py-2 text-xs text-gray-500 font-medium">取消</button>
+    </div>
+</div>
+
+<div id="resetModal" class="modal-backdrop">
+    <div class="modal-content max-w-sm p-6 text-center">
+        <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xl mx-auto mb-3">⚠️</div>
+        <h3 class="text-lg font-bold text-gray-900 mb-1">重置所有数据</h3>
+        <p class="text-xs text-gray-500 mb-5">确定要删除全部30天的打卡、提醒、备注以及自定义日程吗？此操作不可撤销。</p>
+        <div class="flex gap-3">
+            <button onclick="closeModal('resetModal')" class="flex-1 py-2 bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl">取消</button>
+            <button onclick="executeReset()" class="flex-1 py-2 bg-red-600 text-white text-xs font-semibold rounded-xl shadow-sm">确定删除</button>
+        </div>
+    </div>
+</div>
+
+<div id="editScheduleModal" class="modal-backdrop">
+    <div class="modal-content max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">编辑今日日程</h3>
+                <p class="text-xs text-gray-500 mt-0.5">修改或删除时间段，仅针对当前天有效。</p>
+            </div>
+            <button onclick="closeModal('editScheduleModal')" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500">✕</button>
+        </div>
+        
+        <div class="p-4 sm:p-6 overflow-y-auto flex-1 bg-gray-50/50">
+            <div id="editRowsContainer" class="space-y-2.5"></div>
+            <button onclick="addEditRow()" class="mt-3 w-full py-2.5 border-2 border-dashed border-gray-200 text-gray-500 text-xs sm:text-sm font-semibold rounded-xl hover:bg-gray-50 flex items-center justify-center gap-1">
+                <span>+</span> 添加时间段
+            </button>
+        </div>
+
+        <div class="px-5 py-3 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
+            <button onclick="revertToDefaultSchedule()" class="px-3 py-1.5 text-brand-600 text-xs font-semibold hover:bg-brand-50 rounded-lg">恢复默认</button>
+            <div class="flex gap-2">
+                <button onclick="closeModal('editScheduleModal')" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl">取消</button>
+                <button onclick="saveEditedSchedule()" class="px-4 py-2 bg-gray-900 text-white text-xs font-semibold rounded-xl shadow-sm">保存日程</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   PWA Registration & Performance Optimizations
+========================================================= */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Registration failed', err));
+    });
+}
+
+let deferredPrompt;
+const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (pwaInstallBtn) {
+        pwaInstallBtn.classList.remove('hidden');
+        pwaInstallBtn.classList.add('flex');
+    }
+});
+
+if (pwaInstallBtn) {
+    pwaInstallBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                pwaInstallBtn.classList.add('hidden');
+            }
+            deferredPrompt = null;
+        }
+    });
+}
+
+/* =========================================================
+   Data & App Logic
+========================================================= */
+const STORAGE_KEY = "study30_reminder_v3";
+const REVIEW_KEY = "study30_review_v3";
+
+const tasks = [
+    { id: "spanish", name: "西班牙语", icon: "🇪🇸", desc: "约1小时" },
+    { id: "english", name: "英语", icon: "🇬🇧", desc: "约1小时" },
+    { id: "thai", name: "泰语翻译", icon: "🇹🇭", desc: "1–2小时" },
+    { id: "academic", name: "学术阅读", icon: "📖", desc: "论文、专著、研究文献" },
+    { id: "exercise", name: "运动", icon: "🏃", desc: "约1小时" },
+    { id: "career", name: "面试 / 工作技能", icon: "💼", desc: "1小时" },
+    { id: "daily", name: "日常阅读", icon: "📚", desc: "30–60分钟" }
+];
+
+let data = loadData();
+let currentDay = 0;
+let editingSchedule = [];
+let activeReminderSlotKey = null;
+
+function weekdayName(day) {
+    return ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][day];
+}
+
+function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+}
+
+function getDate(index) {
+    const start = new Date(data.startDate + "T00:00:00");
+    start.setDate(start.getDate() + index);
+    return start;
+}
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    const bgClass = type === 'success' ? 'bg-gray-900' : 'bg-red-600';
+    toast.className = `px-4 py-2 ${bgClass} text-white text-xs sm:text-sm rounded-lg shadow-floating fade-in`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('modal-enter'); }
+function closeModal(id) { document.getElementById(id).classList.remove('modal-enter'); }
+
+function loadData() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        try {
+            const result = JSON.parse(saved);
+            if (result && result.days) return result;
+        } catch (e) {}
+    }
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const days = [];
+    for (let i = 0; i < 30; i++) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
+        days.push({
+            date: formatDate(date),
+            completed: {},
+            reminders: {},
+            note: "",
+            customSchedule: null
+        });
+    }
+    return { startDate: formatDate(start), defaultReminder: 10, days };
+}
+
+function saveData(show = true) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (show) showToast("已自动保存 ✓");
+}
+
+function getDayData(index = currentDay) {
+    return data.days[index];
+}
+
+function taskSlot(time, task) { return { type: "task", time, task, key: task + "_" + time.replace(/[^0-9]/g, "") }; }
+function freeSlot(time, text) { return { type: "free", time, text, key: "free_" + time.replace(/[^0-9]/g, "") + "_" + Math.random().toString(36).substr(2,4) }; }
+function courseSlot(time, text) { return { type: "course", time, text, key: "course_" + time.replace(/[^0-9]/g, "") + "_" + Math.random().toString(36).substr(2,4) }; }
+
+function getSchedule(date) {
+    const day = date.getDay();
+    if (day === 1) return [
+        taskSlot("08:00–09:00", "spanish"), taskSlot("09:00–10:00", "spanish"), taskSlot("10:00–11:00", "english"), taskSlot("11:00–12:00", "academic"),
+        freeSlot("12:00–13:00", "🍚 午餐 / 休息"), taskSlot("13:00–14:00", "thai"), taskSlot("14:00–15:00", "thai"), taskSlot("15:00–16:00", "exercise"),
+        taskSlot("16:00–17:00", "spanish"), freeSlot("17:00–18:00", "🌙 休息 / 自由"), freeSlot("18:00–19:00", "🍚 晚餐 / 休息"), taskSlot("19:00–20:00", "career"),
+        taskSlot("20:00–21:00", "spanish"), taskSlot("21:00–22:00", "daily"), freeSlot("22:00–23:00", "🌙 自由时间")
+    ];
+    if (day === 2) return [
+        taskSlot("08:00–09:00", "spanish"), taskSlot("09:00–10:00", "english"), taskSlot("10:00–11:00", "thai"), taskSlot("11:00–12:00", "thai"),
+        freeSlot("12:00–13:00", "🍚 午餐 / 休息"), courseSlot("13:00–17:00", "📖 语言学名著选读"), freeSlot("17:00–18:00", "🍚 晚餐 / 休息"), freeSlot("18:00–19:00", "🍚 晚餐 / 休息"),
+        taskSlot("19:00–20:00", "thai"), taskSlot("20:00–21:00", "spanish"), taskSlot("21:00–22:00", "daily"), freeSlot("22:00–23:00", "🌙 自由时间")
+    ];
+    if (day === 3) return [
+        courseSlot("08:00–09:00", "📚 上午课程"), courseSlot("09:00–10:00", "📚 上午课程"), courseSlot("10:00–11:00", "📚 上午课程"), courseSlot("11:00–12:00", "📚 上午课程"),
+        freeSlot("12:00–13:00", "🍚 午餐 / 休息"), taskSlot("13:00–14:00", "thai"), taskSlot("14:00–15:00", "thai"), taskSlot("15:00–16:00", "exercise"),
+        freeSlot("16:00–17:00", "🌙 休息 / 自由"), freeSlot("17:00–18:00", "🍚 晚餐"), freeSlot("18:00–19:00", "🍚 晚餐 / 休息"), courseSlot("19:00–20:00", "📖 台语文字学"),
+        courseSlot("20:00–21:00", "📖 台语文字学"), courseSlot("21:00–22:00", "📖 台语文字学"), courseSlot("22:00–23:00", "📖 台语文字学")
+    ];
+    if (day === 4) return [
+        courseSlot("08:00–09:00", "📚 亚洲历史文化"), courseSlot("09:00–10:00", "📚 亚洲历史文化"), courseSlot("10:00–11:00", "📚 亚洲历史文化"), courseSlot("11:00–12:00", "📚 亚洲历史文化"),
+        freeSlot("12:00–13:00", "🍚 午餐 / 休息"), freeSlot("13:00–14:00", "📖 课程复习"), taskSlot("14:00–15:00", "english"), taskSlot("15:00–16:00", "spanish"),
+        taskSlot("16:00–17:00", "spanish"), taskSlot("17:00–18:00", "exercise"), freeSlot("18:00–19:00", "🍚 晚餐 / 休息"), taskSlot("19:00–20:00", "career"),
+        taskSlot("20:00–21:00", "spanish"), taskSlot("21:00–22:00", "daily"), freeSlot("22:00–23:00", "🌙 自由时间")
+    ];
+    if (day === 5) return [
+        taskSlot("08:00–09:00", "spanish"), taskSlot("09:00–10:00", "english"), taskSlot("10:00–11:00", "academic"), taskSlot("11:00–12:00", "academic"),
+        freeSlot("12:00–13:00", "🍚 午餐 / 休息"), taskSlot("13:00–14:00", "thai"), taskSlot("14:00–15:00", "thai"), taskSlot("15:00–16:00", "exercise"),
+        freeSlot("16:00–17:00", "🌙 休息 / 自由"), freeSlot("17:00–18:00", "🍚 晚餐"), freeSlot("18:00–19:00", "🍚 晚餐 / 休息"), taskSlot("19:00–20:00", "career"),
+        taskSlot("20:00–21:00", "spanish"), taskSlot("21:00–22:00", "daily"), freeSlot("22:00–23:00", "🌙 自由时间")
+    ];
+    if (day === 6) return [];
+    
+    return [
+        taskSlot("08:00–09:00", "spanish"), taskSlot("09:00–10:00", "english"), taskSlot("10:00–11:00", "academic"), taskSlot("11:00–12:00", "academic"),
+        freeSlot("12:00–13:00", "🍚 午餐 / 休息"), courseSlot("13:00–16:00", "📚 翻译泰语"), freeSlot("16:00–17:00", "🌙 休息 / 自由"), freeSlot("17:00–18:00", "🌙 休息"),
+        freeSlot("18:00–19:00", "🍚 晚餐 / 休息"), freeSlot("19:00–20:00", "🔄 本周复盘"), freeSlot("20:00–21:00", "📅 下周计划"), taskSlot("21:00–22:00", "daily"),
+        freeSlot("22:00–23:00", "🌙 自由时间")
+    ];
+}
+
+function getEffectiveSchedule(dayIndex) {
+    const dayData = getDayData(dayIndex);
+    if (dayData && dayData.customSchedule) {
+        return dayData.customSchedule;
+    }
+    return getSchedule(getDate(dayIndex));
+}
+
+function getTask(id) {
+    return tasks.find(task => task.id === id);
+}
+
+function getReminder(dayData, slotKey) {
+    if (dayData.reminders && Object.prototype.hasOwnProperty.call(dayData.reminders, slotKey)) {
+        return dayData.reminders[slotKey];
+    }
+    return data.defaultReminder ?? 10;
+}
+
+function setReminder(slotKey, value) {
+    const dayData = getDayData();
+    if (!dayData.reminders) dayData.reminders = {};
+    dayData.reminders[slotKey] = value;
+    saveData(false);
+    renderTasks();
+}
+
+function openReminderSettings(slotKey, taskName) {
+    activeReminderSlotKey = slotKey;
+    document.getElementById('reminderModalTaskName').textContent = `正在为 "${taskName}" 设置提醒`;
+    openModal('reminderModal');
+}
+
+function saveReminderSelection(val) {
+    if(activeReminderSlotKey) setReminder(activeReminderSlotKey, val);
+    closeModal('reminderModal');
+}
+
+function saveCustomReminderInput() {
+    const val = parseInt(document.getElementById('customReminderMinutes').value);
+    if (isNaN(val) || val < 0 || val > 1440) {
+        showToast("请输入 0-1440 之间的数字", "error");
+        return;
+    }
+    if(activeReminderSlotKey) setReminder(activeReminderSlotKey, val);
+    closeModal('reminderModal');
+}
+
+function toggleTask(slotKey) {
+    const dayData = getDayData();
+    if (!dayData.completed) dayData.completed = {};
+    dayData.completed[slotKey] = !dayData.completed[slotKey];
+    saveData(false);
+    renderTasks();
+    renderTodayProgress();
+    renderSideSummary();
+    renderStats();
+    renderTable();
+}
+
+function openEditScheduleModal() {
+    editingSchedule = JSON.parse(JSON.stringify(getEffectiveSchedule(currentDay)));
+    renderEditRows();
+    openModal('editScheduleModal');
+}
+
+function renderEditRows() {
+    const container = document.getElementById("editRowsContainer");
+    if (editingSchedule.length === 0) {
+        container.innerHTML = `<div class="text-center text-gray-400 py-6 text-xs">今日暂无日程，点击下方按钮添加。</div>`;
+        return;
+    }
+
+    container.innerHTML = editingSchedule.map((slot, index) => {
+        let contentInput = '';
+        if (slot.type === 'task') {
+            const options = tasks.map(t => `<option value="${t.id}" ${t.id === slot.task ? 'selected' : ''}>${t.icon} ${t.name}</option>`).join('');
+            contentInput = `<select onchange="updateEditRow(${index}, 'task', this.value)" class="w-full text-xs sm:text-sm p-2 rounded-lg border border-gray-200 outline-none bg-white">
+                <option value="" disabled ${!slot.task ? 'selected' : ''}>选择任务...</option>
+                ${options}
+            </select>`;
+        } else {
+            contentInput = `<input type="text" value="${slot.text || ''}" oninput="updateEditRow(${index}, 'text', this.value)" placeholder="描述" class="w-full text-xs sm:text-sm p-2 rounded-lg border border-gray-200 outline-none">`;
+        }
+
+        return `
+            <div class="flex flex-col sm:flex-row gap-2 sm:items-center bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm relative">
+                <input type="text" value="${slot.time || ''}" oninput="updateEditRow(${index}, 'time', this.value)" class="w-full sm:w-28 text-xs sm:text-sm p-2 rounded-lg border border-gray-200 outline-none time-tabular text-center" placeholder="08:00-09:00">
+                <select onchange="updateEditRow(${index}, 'type', this.value)" class="w-full sm:w-28 text-xs sm:text-sm p-2 rounded-lg border border-gray-200 outline-none bg-gray-50">
+                    <option value="task" ${slot.type === 'task' ? 'selected' : ''}>任务 (打卡)</option>
+                    <option value="course" ${slot.type === 'course' ? 'selected' : ''}>课程</option>
+                    <option value="free" ${slot.type === 'free' ? 'selected' : ''}>自由时间</option>
+                </select>
+                <div class="flex-1 w-full">${contentInput}</div>
+                <button onclick="deleteEditRow(${index})" class="shrink-0 w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg">✕</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateEditRow(index, field, value) {
+    editingSchedule[index][field] = value;
+    if (field === 'type') {
+        if (value === 'task') {
+            editingSchedule[index].task = tasks[0].id;
+            delete editingSchedule[index].text;
+        } else {
+            editingSchedule[index].text = '';
+            delete editingSchedule[index].task;
+        }
+        renderEditRows();
+    }
+}
+
+function addEditRow() {
+    editingSchedule.push({ type: 'task', time: '', task: tasks[0].id });
+    renderEditRows();
+}
+
+function deleteEditRow(index) {
+    editingSchedule.splice(index, 1);
+    renderEditRows();
+}
+
+function revertToDefaultSchedule() {
+    editingSchedule = JSON.parse(JSON.stringify(getSchedule(getDate(currentDay))));
+    renderEditRows();
+}
+
+function saveEditedSchedule() {
+    for (let i = 0; i < editingSchedule.length; i++) {
+        const s = editingSchedule[i];
+        if (!s.time.trim()) { showToast(`第 ${i+1} 行请填写时间`, "error"); return; }
+        if (s.type === 'task' && !s.task) { showToast(`第 ${i+1} 行请选择任务`, "error"); return; }
+        if ((s.type === 'course' || s.type === 'free') && !s.text) { showToast(`第 ${i+1} 行请填写内容`, "error"); return; }
+    }
+
+    editingSchedule.forEach(slot => {
+        if (!slot.key) {
+            const baseStr = (slot.type === 'task' ? slot.task : slot.type) + "_" + slot.time.replace(/[^0-9]/g, "");
+            slot.key = `custom_${baseStr}_${Math.random().toString(36).substr(2,6)}`;
+        }
+    });
+
+    const dayData = getDayData();
+    dayData.customSchedule = editingSchedule;
+    saveData();
+    closeModal('editScheduleModal');
+    render();
+    showToast("日程已更新");
+}
+
+function renderTasks() {
+    const area = document.getElementById("taskArea");
+    const date = getDate(currentDay);
+    const schedule = getEffectiveSchedule(currentDay);
+    const dayData = getDayData();
+
+    if (date.getDay() === 6 && (!dayData.customSchedule || dayData.customSchedule.length === 0)) {
+        area.innerHTML = `
+            <div class="py-10 text-center">
+                <div class="text-4xl mb-3">💤</div>
+                <h3 class="text-base font-bold text-gray-900 mb-1">今天完整休息</h3>
+                <p class="text-xs text-gray-500">周六默认不安排打卡，好好休息恢复精力。<br><span class="mt-1 block opacity-75">(点击"编辑日程"可自定义安排)</span></p>
+            </div>`;
+        return;
+    }
+
+    if (schedule.length === 0) {
+        area.innerHTML = `<div class="py-8 text-center text-xs text-gray-400">今日暂无安排。点击右上角"编辑日程"添加。</div>`;
+        return;
+    }
+
+    let html = `<div class="space-y-2.5">`;
+    
+    schedule.forEach(item => {
+        if (item.type === "free") {
+            html += `
+                <div class="grid grid-cols-[65px_1fr] sm:grid-cols-[85px_1fr] gap-2.5 items-center">
+                    <div class="text-right text-xs font-medium text-gray-400 time-tabular">${item.time}</div>
+                    <div class="min-h-[42px] flex items-center px-3.5 py-2 bg-gray-50/70 border border-dashed border-gray-200 rounded-xl text-xs sm:text-sm text-gray-500">
+                        ${item.text}
+                    </div>
+                </div>`;
+            return;
+        }
+
+        if (item.type === "course") {
+            html += `
+                <div class="grid grid-cols-[65px_1fr] sm:grid-cols-[85px_1fr] gap-2.5 items-center">
+                    <div class="text-right text-xs font-medium text-gray-400 time-tabular">${item.time}</div>
+                    <div class="min-h-[42px] flex items-center px-3.5 py-2 bg-orange-50/50 border border-orange-100 rounded-xl text-xs sm:text-sm font-semibold text-orange-800">
+                        ${item.text}
+                    </div>
+                </div>`;
+            return;
+        }
+
+        const task = getTask(item.task);
+        if (!task) return;
+
+        const completed = dayData.completed && dayData.completed[item.key] === true;
+        const reminder = getReminder(dayData, item.key);
+        let reminderText = reminder === -1 ? "未提醒" : reminder === 0 ? "开始时" : `提前${reminder}分`;
+
+        const baseClass = completed ? "bg-done-bg border-done-border" : "bg-white border-gray-200 hover:shadow-sm";
+        const iconClass = completed ? "bg-done-text text-white border-done-text" : "bg-gray-50 text-gray-700 border-gray-100";
+        const titleClass = completed ? "text-done-text" : "text-gray-900";
+        const checkClass = completed ? "bg-done-text border-done-text text-white" : "border-gray-300 text-transparent hover:border-gray-500";
+
+        html += `
+            <div class="grid grid-cols-[65px_1fr] sm:grid-cols-[85px_1fr] gap-2.5 items-center">
+                <div class="text-right text-xs font-medium text-gray-400 time-tabular">${item.time}</div>
+                
+                <div class="flex items-center gap-2.5 p-2.5 border rounded-xl transition-all ${baseClass}">
+                    
+                    <div class="w-9 h-9 flex shrink-0 items-center justify-center border rounded-xl text-base transition-colors ${iconClass}">
+                        ${completed ? "✓" : task.icon}
+                    </div>
+                    
+                    <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleTask('${item.key}')">
+                        <div class="text-xs sm:text-sm font-bold truncate ${titleClass}">${task.name}</div>
+                        <div class="text-[11px] text-gray-500 mt-0.5 truncate flex gap-1 items-center">
+                            <span>${task.desc}</span>
+                            <span class="w-1 h-1 rounded-full bg-gray-300"></span>
+                            <span class="${completed ? 'opacity-50' : ''}">${reminderText}</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="openReminderSettings('${item.key}', '${task.name}')" title="设置提醒" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm ${completed ? 'opacity-40' : ''}">
+                        🔔
+                    </button>
+                    
+                    <div onclick="toggleTask('${item.key}')" class="shrink-0 w-6 h-6 flex items-center justify-center border-2 rounded-full cursor-pointer text-xs font-bold transition-colors ${checkClass}">
+                        ✓
+                    </div>
+                </div>
+            </div>`;
+    });
+    
+    html += `</div>`;
+    area.innerHTML = html;
+}
+
+function renderNote() {
+    document.getElementById("dailyNote").value = getDayData().note || "";
+}
+
+function saveNote() {
+    getDayData().note = document.getElementById("dailyNote").value;
+    saveData(false);
+}
+
+function getTodayTaskStats() {
+    const schedule = getEffectiveSchedule(currentDay);
+    const taskSlots = schedule.filter(item => item.type === "task");
+    const dayData = getDayData();
+    let done = 0;
+    taskSlots.forEach(item => {
+        if (dayData.completed && dayData.completed[item.key]) done++;
+    });
+    return { total: taskSlots.length, done };
+}
+
+function renderSideSummary() {
+    const side = document.getElementById("sideSummary");
+    const date = getDate(currentDay);
+    const schedule = getEffectiveSchedule(currentDay);
+    
+    if (date.getDay() === 6 && schedule.length === 0) {
+        side.innerHTML = `<div class="text-xs text-gray-500 p-2.5 bg-gray-50 rounded-xl">今天完整休息，不需要打卡。</div>`;
+        return;
+    }
+
+    const dayData = getDayData();
+    let html = "";
+
+    tasks.forEach(task => {
+        const slots = schedule.filter(item => item.type === "task" && item.task === task.id);
+        if (slots.length === 0) return;
+        let done = 0;
+        slots.forEach(slot => { if (dayData.completed && dayData.completed[slot.key]) done++; });
+        
+        html += `
+            <div class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-lg">
+                <span class="text-xs text-gray-700 flex items-center gap-1.5">${task.icon} ${task.name}</span>
+                <span class="text-xs font-bold ${done === slots.length ? 'text-done-text' : 'text-gray-900'}">${done}/${slots.length}</span>
+            </div>`;
+    });
+
+    side.innerHTML = html || `<div class="text-xs text-gray-400">今日暂无统计任务。</div>`;
+}
+
+function renderDate() {
+    const date = getDate(currentDay);
+    document.getElementById("dayTitle").textContent = `第 ${currentDay + 1} 天 · ${weekdayName(date.getDay())}`;
+    document.getElementById("dateTitle").textContent = formatDate(date);
+    document.getElementById("prevBtn").disabled = currentDay === 0;
+    document.getElementById("nextBtn").disabled = currentDay === 29;
+}
+
+function renderTodayProgress() {
+    const stats = getTodayTaskStats();
+    const bar = document.getElementById("todayBar");
+    
+    if (stats.total === 0) {
+        document.getElementById("todayDone").textContent = "—";
+        document.getElementById("todayTotal").textContent = "—";
+        bar.style.width = "0%";
+        return;
+    }
+    const rate = Math.round((stats.done / stats.total) * 100);
+    document.getElementById("todayDone").textContent = stats.done;
+    document.getElementById("todayTotal").textContent = stats.total;
+    bar.style.width = rate + "%";
+    bar.className = `h-full rounded-full transition-all duration-500 ease-out ${rate === 100 ? 'bg-done-text' : 'bg-brand-500'}`;
+}
+
+function renderStats() {
+    let total = 0; let done = 0;
+    data.days.forEach((dayData, index) => {
+        const schedule = getEffectiveSchedule(index);
+        schedule.forEach(item => {
+            if (item.type !== "task") return;
+            total++;
+            if (dayData.completed && dayData.completed[item.key]) done++;
+        });
+    });
+
+    const rate = total === 0 ? 0 : Math.round((done / total) * 100);
+    document.getElementById("overallRate").textContent = rate + "%";
+    document.getElementById("overallBar").style.width = rate + "%";
+    document.getElementById("doneCount").textContent = done;
+
+    const today = getTodayTaskStats();
+    document.getElementById("todayRate").textContent = today.total === 0 ? "休息" : Math.round((today.done / today.total) * 100) + "%";
+    document.getElementById("streak").textContent = calculateStreak();
+}
+
+function calculateStreak() {
+    let streak = 0;
+    for (let i = currentDay; i >= 0; i--) {
+        const schedule = getEffectiveSchedule(i);
+        const slots = schedule.filter(item => item.type === "task");
+        if (slots.length === 0) continue;
+        
+        const dayData = data.days[i];
+        const hasDone = slots.some(item => dayData.completed && dayData.completed[item.key]);
+        if (hasDone) streak++; else break;
+    }
+    return streak;
+}
+
+function renderTable() {
+    const tbody = document.getElementById("summaryTable");
+    let html = "";
+    
+    tasks.forEach(task => {
+        let planned = 0; let completed = 0;
+        data.days.forEach((dayData, index) => {
+            const schedule = getEffectiveSchedule(index);
+            schedule.forEach(item => {
+                if (item.type === "task" && item.task === task.id) {
+                    planned++;
+                    if (dayData.completed && dayData.completed[item.key]) completed++;
+                }
+            });
+        });
+        
+        if(planned === 0) return;
+        const rate = Math.round((completed / planned) * 100);
+        
+        html += `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-4 sm:px-6 py-3 flex items-center gap-2 font-medium text-gray-900">${task.icon} ${task.name}</td>
+                <td class="px-4 sm:px-6 py-3 text-center text-gray-600">${planned}</td>
+                <td class="px-4 sm:px-6 py-3 text-center font-semibold text-gray-900">${completed}</td>
+                <td class="px-4 sm:px-6 py-3 text-center">
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${rate >= 80 ? 'bg-green-100 text-green-700' : rate >= 50 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}">${rate}%</span>
+                </td>
+            </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+function changeDay(direction) {
+    currentDay = Math.max(0, Math.min(29, currentDay + direction));
+    render();
+}
+
+function goToday() {
+    const today = new Date();
+    const start = new Date(data.startDate + "T00:00:00");
+    const diff = Math.floor((today - start) / 86400000);
+    currentDay = (diff >= 0 && diff < 30) ? diff : 0;
+    render();
+}
+
+function changeDefaultReminder() {
+    const val = document.getElementById("defaultReminder").value;
+    data.defaultReminder = val === "0-start" ? 0 : Number(val);
+    saveData();
+}
+
+function updatePermissionStatus() {
+    const box = document.getElementById("permissionStatus");
+    if (!("Notification" in window)) {
+        box.textContent = "当前浏览器不支持通知";
+        box.className = "px-3 py-2 bg-red-50 text-red-600 text-xs rounded-lg mb-3 font-medium";
+    } else if (Notification.permission === "granted") {
+        box.textContent = "✓ 开启打卡提醒";
+        box.className = "px-3 py-2 bg-done-bg text-done-text border border-done-border text-xs rounded-lg mb-3 font-medium";
+    } else if (Notification.permission === "denied") {
+        box.textContent = "通知被禁用，请在设置中允许";
+        box.className = "px-3 py-2 bg-red-50 text-red-600 text-xs rounded-lg mb-3 font-medium";
+    } else {
+        box.textContent = "尚未开启通知权限";
+        box.className = "px-3 py-2 bg-gray-100 text-gray-600 text-xs rounded-lg mb-3 font-medium";
+    }
+}
+
+async function requestNotification() {
+    if (!("Notification" in window)) { showToast("浏览器不支持通知", "error"); return; }
+    try {
+        const permission = await Notification.requestPermission();
+        updatePermissionStatus();
+        if (permission === "granted") showToast("通知已开启 ✓");
+        else showToast("未允许通知", "error");
+    } catch (e) { showToast("请求通知失败", "error"); }
+}
+
+function checkReminders() {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    const now = new Date();
+    data.days.forEach((dayData, index) => {
+        const date = getDate(index);
+        const schedule = getEffectiveSchedule(index);
+        
+        schedule.forEach(item => {
+            if (item.type !== "task") return;
+            const reminder = getReminder(dayData, item.key);
+            if (reminder === -1) return;
+            if (dayData.completed && dayData.completed[item.key]) return;
+            
+            const startStr = item.time.split("–")[0];
+            const reminderTime = new Date(`${formatDate(date)}T${startStr}:00`);
+            reminderTime.setMinutes(reminderTime.getMinutes() - reminder);
+            
+            if (Math.abs(now - reminderTime) <= 60000) {
+                const uniqueKey = formatDate(date) + "_" + item.key + "_" + reminder;
+                if (localStorage.getItem("study30_notice_" + uniqueKey)) return;
+                localStorage.setItem("study30_notice_" + uniqueKey, "1");
+                const task = getTask(item.task);
+                try {
+                    new Notification(`⏰ ${task.name}`, { body: `${item.time} 开始：${task.name}\n请准备开始今天的任务。` });
+                } catch(e) {}
+            }
+        });
+    });
+}
+// Mobile power saving: poll every 60s
+setInterval(checkReminders, 60000);
+
+function saveReview() {
+    const review = {
+        r1: document.getElementById("review1").value, r2: document.getElementById("review2").value,
+        r3: document.getElementById("review3").value, r4: document.getElementById("review4").value,
+        r5: document.getElementById("review5").value, r6: document.getElementById("review6").value
+    };
+    localStorage.setItem(REVIEW_KEY, JSON.stringify(review));
+}
+
+function loadReviews() {
+    const saved = localStorage.getItem(REVIEW_KEY);
+    if (!saved) return;
+    try {
+        const review = JSON.parse(saved);
+        for(let i=1; i<=6; i++) {
+            const el = document.getElementById(`review${i}`);
+            if(el) el.value = review[`r${i}`] || "";
+        }
+    } catch (e) {}
+}
+
+function openResetModal() { openModal('resetModal'); }
+
+function executeReset() {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(REVIEW_KEY);
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith("study30_notice_")) localStorage.removeItem(key);
+    });
+    
+    data = loadData();
+    currentDay = 0;
+    loadReviews();
+    render();
+    closeModal('resetModal');
+    showToast("所有数据已重置");
+}
+
+function render() {
+    renderDate();
+    renderTasks();
+    renderNote();
+    renderTodayProgress();
+    renderSideSummary();
+    renderStats();
+    renderTable();
+    updatePermissionStatus();
+    
+    const dr = document.getElementById("defaultReminder");
+    if(dr) dr.value = data.defaultReminder === 0 ? "0-start" : String(data.defaultReminder ?? 10);
+}
+
+loadReviews();
+render();
+checkReminders();
+</script>
+</body>
+</html>
